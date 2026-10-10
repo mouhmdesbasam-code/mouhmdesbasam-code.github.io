@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Password Strength &amp; Security Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #040816;
+    --bg-2: #08122e;
+    --cyan: #38d9ff;
+    --cyan-glow: rgba(56, 217, 255, .55);
+    --card-1: #a3121f;
+    --card-2: #6e0b16;
+    --track: #060b1f;
+    --text: #fff5f5;
+    --muted: #ffd0d4;
+    --ok: #4ade80;
+    --bad: #ffb4b4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body {
+    font-family: "Inter", "Segoe UI", Tahoma, Arial, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(56,217,255,.10), transparent 60%),
+      radial-gradient(700px 500px at 0% 110%, rgba(163,18,31,.18), transparent 60%),
+      linear-gradient(160deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 540px;
+    padding: 34px 30px 30px;
+    border-radius: 22px;
+    background: linear-gradient(155deg, var(--card-1), var(--card-2));
+    border: 1px solid rgba(56,217,255,.35);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,.4),
+      0 0 38px rgba(56,217,255,.18),
+      0 24px 60px rgba(0,0,0,.65);
+  }
+
+  h1 {
+    font-size: 1.7rem;
+    font-weight: 800;
+    letter-spacing: -.01em;
+    color: var(--cyan);
+    text-shadow: 0 0 14px var(--cyan-glow), 0 0 32px rgba(56,217,255,.3);
+    margin-bottom: 6px;
+  }
+  .sub { color: var(--muted); font-size: .92rem; margin-bottom: 26px; line-height: 1.65; }
+
+  h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--cyan);
+    text-shadow: 0 0 10px var(--cyan-glow);
+    margin: 26px 0 12px;
+  }
+
+  /* Input */
+  .field { position: relative; }
+  #pwd {
+    width: 100%;
+    padding: 15px 52px 15px 16px;
+    font: inherit;
+    font-size: 1.08rem;
+    letter-spacing: .5px;
+    color: #eaf9ff;
+    background: rgba(4, 8, 22, .88);
+    border: 1.5px solid rgba(56,217,255,.35);
+    border-radius: 13px;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  #pwd::placeholder { color: #6f86a8; letter-spacing: 0; }
+  #pwd:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(56,217,255,.22), 0 0 22px var(--cyan-glow);
+  }
+  #toggle {
+    position: absolute;
+    right: 8px; top: 50%;
+    transform: translateY(-50%);
+    width: 38px; height: 38px;
+    display: grid; place-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 9px;
+    color: var(--cyan);
+    cursor: pointer;
+  }
+  #toggle:hover { background: rgba(56,217,255,.12); }
+  #toggle:focus-visible { outline: 2px solid var(--cyan); }
+  #toggle svg { width: 22px; height: 22px; }
+
+  /* Meter */
+  .meter-head { display: flex; justify-content: space-between; align-items: baseline; margin-top: 22px; margin-bottom: 9px; }
+  #levelText { font-weight: 800; font-size: 1.05rem; transition: color .3s, text-shadow .3s; }
+  #scoreText { font-size: .85rem; color: var(--muted); }
+  .track {
+    height: 14px;
+    background: var(--track);
+    border-radius: 99px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  #bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 99px;
+    background: #b00020;
+    box-shadow: 0 0 14px 1px #b00020;
+    transition: width .45s cubic-bezier(.2,.8,.2,1), background .35s, box-shadow .35s;
+  }
+
+  /* Checklist */
+  ul { list-style: none; display: grid; gap: 9px; }
+  .rule {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 13px;
+    background: rgba(4, 8, 22, .45);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 11px;
+    font-size: .95rem;
+    color: var(--bad);
+    transition: color .25s, border-color .25s, background .25s;
+  }
+  .rule .ico {
+    flex: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: .8rem; font-weight: 800;
+    background: rgba(255,255,255,.12);
+    color: #fff;
+    transition: background .25s, box-shadow .25s;
+  }
+  .rule.pass { color: #eafff1; border-color: rgba(74,222,128,.55); background: rgba(8, 40, 24, .5); }
+  .rule.pass .ico { background: var(--ok); color: #052e16; box-shadow: 0 0 12px rgba(74,222,128,.7); }
+  .rule small { margin-inline-start: auto; opacity: .7; font-size: .8rem; }
+
+  /* Tips */
+  #tips { display: grid; gap: 9px; }
+  .tip {
+    padding: 11px 14px;
+    border-radius: 11px;
+    background: rgba(4, 8, 22, .55);
+    border-inline-start: 3px solid var(--cyan);
+    font-size: .92rem;
+    line-height: 1.65;
+    color: #fff;
+  }
+  .tip.good { border-inline-start-color: var(--ok); }
+
+  .meta { margin-top: 20px; font-size: .84rem; color: var(--muted); line-height: 1.7; }
+  .meta b { color: #fff; }
+
+  @media (max-width: 460px) {
+    .card { padding: 26px 18px 22px; }
+    h1 { font-size: 1.4rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<main class="card">
+  <h1>Password Security Checker</h1>
+  <p class="sub">Type a password and it is analyzed instantly inside your browser. Nothing is sent or stored anywhere.</p>
+
+  <div class="field">
+    <input id="pwd" type="password" placeholder="Enter your password here" autocomplete="off" spellcheck="false" aria-label="Password">
+    <button id="toggle" type="button" aria-label="Show password" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="meter-head">
+    <span id="levelText" aria-live="polite">Enter a password to start the check</span>
+    <span id="scoreText"></span>
+  </div>
+  <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="track">
+    <div id="bar"></div>
+  </div>
+
+  <h2>Security requirements</h2>
+  <ul id="rules">
+    <li class="rule" data-rule="length"><span class="ico">✕</span><span>At least 12 characters</span><small id="lenCount">0 / 12</small></li>
+    <li class="rule" data-rule="digit"><span class="ico">✕</span><span>Contains at least one number (0-9)</span></li>
+    <li class="rule" data-rule="symbol"><span class="ico">✕</span><span>Contains a special symbol like @ # $ !</span></li>
+    <li class="rule" data-rule="mixed"><span class="ico">✕</span><span>Mixes uppercase and lowercase letters (bonus)</span></li>
+  </ul>
+
+  <h2>Tips &amp; recommendations</h2>
+  <div id="tips"><div class="tip">Personalized recommendations will appear here based on what your password is missing.</div></div>
+
+  <p class="meta">Estimated time to brute-force: <b id="crack">—</b></p>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var COMMON = ["password","password1","123456","12345678","123456789","1234567890","qwerty","qwerty123",
+    "abc123","111111","000000","iloveyou","admin","letmein","welcome","monkey","dragon","football",
+    "login","passw0rd","p@ssw0rd","p@ssword","azerty","111111111","123123","654321","1q2w3e4r"];
+
+  var LEVELS = [
+    { max: 35,  label: "Very weak",        color: "#b00020" },
+    { max: 65,  label: "Medium",           color: "#ff8a1f" },
+    { max: 90,  label: "Good",             color: "#ffd21f" },
+    { max: 101, label: "Strong & secure",  color: "#22e06b" }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var input = $("pwd"), bar = $("bar"), track = $("track");
+  var levelText = $("levelText"), scoreText = $("scoreText");
+  var tipsBox = $("tips"), crackEl = $("crack"), lenCount = $("lenCount");
+  var ruleEls = {};
+  document.querySelectorAll(".rule").forEach(function (el) { ruleEls[el.dataset.rule] = el; });
+
+  function analyze(p) {
+    var checks = {
+      length: p.length >= 12,
+      digit:  /[0-9]/.test(p),
+      symbol: /[^A-Za-z0-9\s]/.test(p),
+      mixed:  /[a-z]/.test(p) && /[A-Z]/.test(p)
+    };
+
+    // Score: length 40 (progressive), digit 20, symbol 25, mixed case 15
+    var score = Math.min(p.length, 12) / 12 * 40;
+    if (checks.digit)  score += 20;
+    if (checks.symbol) score += 25;
+    if (checks.mixed)  score += 15;
+
+    var issues = [];
+    var isCommon = COMMON.indexOf(p.toLowerCase()) !== -1;
+    var hasRepeat = /(.)\1{2,}/.test(p);
+    var hasSeq = /(0123|1234|2345|3456|4567|5678|6789|abcd|bcde|cdef|qwer|wert|asdf|zxcv)/i.test(p);
+
+    if (isCommon) { score = Math.min(score, 15); issues.push("common"); }
+    if (hasRepeat) { score -= 12; issues.push("repeat"); }
+    if (hasSeq)    { score -= 12; issues.push("seq"); }
+
+    // "Strong" requires all three core requirements
+    var core = checks.length && checks.digit && checks.symbol;
+    if (!core) score = Math.min(score, 89);
+    if (!checks.length) score = Math.min(score, 64);
+
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    return { checks: checks, score: score, issues: issues, core: core };
+  }
+
+  function estimateCrack(p) {
+    var pool = 0;
+    if (/[a-z]/.test(p)) pool += 26;
+    if (/[A-Z]/.test(p)) pool += 26;
+    if (/[0-9]/.test(p)) pool += 10;
+    if (/[^A-Za-z0-9]/.test(p)) pool += 33;
+    if (!pool) return "—";
+    var seconds = (Math.pow(pool, p.length) / 2) / 1e10; // 10 billion guesses/sec (offline attack)
+    if (seconds < 1) return "less than a second";
+    var YEAR = 31557600;
+    if (seconds >= YEAR * 1e9) return "over a billion years";
+    if (seconds >= YEAR * 1e6) return "millions of years";
+    if (seconds >= YEAR * 1e3) return "thousands of years";
+    var units = [
+      [YEAR, "year"], [86400 * 30, "month"], [86400, "day"],
+      [3600, "hour"], [60, "minute"], [1, "second"]
+    ];
+    for (var i = 0; i < units.length; i++) {
+      if (seconds >= units[i][0]) {
+        var n = Math.floor(seconds / units[i][0]);
+        return "about " + n.toLocaleString("en-US") + " " + units[i][1] + (n === 1 ? "" : "s");
+      }
+    }
+    return "less than a second";
+  }
+
+  function buildTips(p, r) {
+    var tips = [];
+    if (r.issues.indexOf("common") !== -1)
+      tips.push("This is a very common password and can be guessed instantly. Choose a unique phrase you don't use anywhere else.");
+    if (!r.checks.length) {
+      var need = 12 - p.length;
+      tips.push("Add at least " + need + " more character" + (need === 1 ? "" : "s") + " to reach 12. Length is the single most important factor.");
+    }
+    if (!r.checks.digit)  tips.push("Add at least one number (0-9), ideally in the middle of the password rather than at the end.");
+    if (!r.checks.symbol) tips.push("Add a special symbol such as @, # or $ to make guessing much harder.");
+    if (!r.checks.mixed)  tips.push("Mix uppercase and lowercase letters to increase complexity.");
+    if (r.issues.indexOf("repeat") !== -1) tips.push("Avoid repeating the same character several times in a row, like aaa or 111.");
+    if (r.issues.indexOf("seq") !== -1)    tips.push("Avoid easy sequences like 1234, abcd or qwer.");
+
+    tipsBox.textContent = "";
+    if (!tips.length) {
+      addTip("Excellent! Your password meets every requirement. Use a different password for each account and turn on two-factor authentication.", true);
+    } else {
+      tips.forEach(function (t) { addTip(t, false); });
+    }
+  }
+  function addTip(text, good) {
+    var d = document.createElement("div");
+    d.className = "tip" + (good ? " good" : "");
+    d.textContent = text;
+    tipsBox.appendChild(d);
+  }
+
+  function render() {
+    var p = input.value;
+    lenCount.textContent = p.length + " / 12";
+
+    if (!p) {
+      bar.style.width = "0%";
+      track.setAttribute("aria-valuenow", "0");
+      levelText.textContent = "Enter a password to start the check";
+      levelText.style.color = "";
+      levelText.style.textShadow = "none";
+      scoreText.textContent = "";
+      crackEl.textContent = "—";
+      Object.keys(ruleEls).forEach(function (k) {
+        ruleEls[k].classList.remove("pass");
+        ruleEls[k].querySelector(".ico").textContent = "✕";
+      });
+      tipsBox.textContent = "";
+      addTip("Personalized recommendations will appear here based on what your password is missing.", false);
+      return;
+    }
+
+    var r = analyze(p);
+
+    Object.keys(ruleEls).forEach(function (k) {
+      var ok = r.checks[k];
+      ruleEls[k].classList.toggle("pass", ok);
+      ruleEls[k].querySelector(".ico").textContent = ok ? "✓" : "✕";
+    });
+
+    var lvl = LEVELS.find(function (l) { return r.score < l.max; });
+    bar.style.width = Math.max(r.score, 6) + "%";
+    bar.style.background = lvl.color;
+    bar.style.boxShadow = "0 0 16px 1px " + lvl.color;
+    track.setAttribute("aria-valuenow", String(r.score));
+
+    levelText.textContent = lvl.label;
+    levelText.style.color = lvl.color;
+    levelText.style.textShadow = "0 0 12px " + lvl.color;
+    scoreText.textContent = r.score + " / 100";
+
+    crackEl.textContent = estimateCrack(p);
+    buildTips(p, r);
+  }
+
+  input.addEventListener("input", render);
+
+  var toggle = $("toggle");
+  toggle.addEventListener("click", function () {
+    var show = input.type === "password";
+    input.type = show ? "text" : "password";
+    toggle.setAttribute("aria-pressed", String(show));
+    toggle.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    input.focus();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
